@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Memory Patterns Demo</title>
+    <link rel="stylesheet" href="/static/styles.css?v=20260328-open-source-2">
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>Agent Memory Patterns</h1>
+            <p class="subtitle">Compare four multi-turn memory strategies on the same Cosmos-backed chat app.</p>
+        </header>
+
+        <div class="controls">
+            <div class="strategy-selector">
+                <button class="strategy-btn" data-strategy="direct_llm">
+                    <span class="icon">🧪</span>
+                    <span class="label">Direct LLM</span>
+                    <span class="desc">No Memory Baseline</span>
+                </button>
+                <button class="strategy-btn active" data-strategy="sliding_window">
+                    <span class="icon">📋</span>
+                    <span class="label">Sliding Window</span>
+                    <span class="desc">Recent + Summary</span>
+                </button>
+                <button class="strategy-btn" data-strategy="hierarchical">
+                    <span class="icon">🏗️</span>
+                    <span class="label">Hierarchical</span>
+                    <span class="desc">3-Tier Memory</span>
+                </button>
+                <button class="strategy-btn" data-strategy="entity_graph">
+                    <span class="icon">🔗</span>
+                    <span class="label">Entity Graph</span>
+                    <span class="desc">Structured Facts</span>
+                </button>
+            </div>
+
+            <div class="session-controls">
+                <div class="session-dropdown-wrap">
+                    <label class="dropdown-label" for="session-select">Session</label>
+                    <select id="session-select">
+                        <option value="">-- Select Session --</option>
+                    </select>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="new-session-btn" title="Create new session">New</button>
+                    <button id="view-memory-btn" title="View memory state">Memory</button>
+                    <button id="reset-baseline-btn" class="reset-btn" title="Reload the canonical 60-turn baseline">Reset to 60</button>
+                    <button id="delete-session-btn" title="Delete current session">Delete</button>
+                    <button id="delete-all-btn" class="danger-btn" title="Delete all sessions for the current strategy">Delete All</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="app-status" class="app-status" aria-live="polite"></div>
+        <div id="baseline-note" class="inline-note" hidden></div>
+
+        <div class="main-content">
+            <div class="chat-panel">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="welcome-message">
+                        <p>Select a memory strategy and a session.</p>
+                        <p>Use <strong>Reset to 60</strong> to load the shared baseline conversation, then pick a question from the dropdown or type your own.</p>
+                    </div>
+                </div>
+                <div class="question-controls">
+                    <div class="question-dropdown-wrap">
+                        <label class="dropdown-label" for="question-select">Question</label>
+                        <select id="question-select">
+                            <option value="">-- Select a recall question --</option>
+                            <option value="What's the tech stack?">What's the tech stack?</option>
+                            <option value="Can you give me a summary of our project team and their responsibilities?">Can you give me a summary of our project team and their responsibilities?</option>
+                            <option value="What's the total budget including the additional ML cluster approval?">What's the total budget including the additional ML cluster approval?</option>
+                            <option value="Which integrations do we need to support for e-commerce platforms?">Which integrations do we need to support for e-commerce platforms?</option>
+                            <option value="What was Mary Doe's model accuracy for churn prediction?">What was Mary Doe's model accuracy for churn prediction?</option>
+                            <option value="What's Tom Doe's estimated monthly AWS cost?">What's Tom Doe's estimated monthly AWS cost?</option>
+                            <option value="Who are our pilot customers for the soft launch?">Who are our pilot customers for the soft launch?</option>
+                            <option value="What's our uptime SLA requirement?">What's our uptime SLA requirement?</option>
+                            <option value="When is our first milestone deadline?">When is our first milestone deadline?</option>
+                        </select>
+                    </div>
+                    <div class="question-action-buttons">
+                        <button id="load-question-btn" type="button" title="Load the selected question into the input">Load Question</button>
+                        <button id="clear-question-btn" type="button" title="Clear the question selection and input">Clear</button>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <textarea id="chat-input" placeholder="Type your message..." rows="2"></textarea>
+                    <button id="send-btn">Send</button>
+                </div>
+            </div>
+
+            <div class="side-panel">
+                <div class="metrics-panel">
+                    <h3>Metrics</h3>
+                    <div class="metric-row">
+                        <span class="metric-label">Prompt Tokens</span>
+                        <span class="metric-value" id="metric-prompt-tokens">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Completion Tokens</span>
+                        <span class="metric-value" id="metric-completion-tokens">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Total Tokens</span>
+                        <span class="metric-value" id="metric-total-tokens">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Latency</span>
+                        <span class="metric-value" id="metric-latency">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Turns Stored</span>
+                        <span class="metric-value" id="metric-turns-stored">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Context Sent</span>
+                        <span class="metric-value" id="metric-context-sent">-</span>
+                    </div>
+                </div>
+
+                <div class="token-chart">
+                    <h3>Token Usage History</h3>
+                    <div id="token-chart-bars"></div>
+                </div>
+
+                <div class="memory-panel" id="memory-panel" style="display:none">
+                    <h3>Memory State <button id="copy-memory" class="copy-btn" title="Copy to clipboard">Copy</button> <button id="close-memory" class="close-btn">×</button></h3>
+                    <pre id="memory-content"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=20260328-open-source-2"></script>
+</body>
+</html>

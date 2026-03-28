@@ -1,0 +1,44 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "F5: Run App",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "args": [
+        "--provision",
+        "--open-browser",
+        "--kill-existing-port",
+        "--no-reload"
+      ],
+      "justMyCode": true,
+      "preLaunchTask": "Bootstrap .venv"
+    },
+    {
+      "name": "F5: Run App (Mock OpenAI)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "MOCK_OPENAI": "true"
+      },
+      "args": [
+        "--provision",
+        "--open-browser",
+        "--kill-existing-port",
+        "--no-reload"
+      ],
+      "justMyCode": true,
+      "preLaunchTask": "Bootstrap .venv"
+    }
+  ]
+}

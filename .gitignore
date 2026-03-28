@@ -1,0 +1,43 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+
+# Virtualenv
+.venv/
+venv/
+env/
+ENV/
+
+# Env files (keep templates)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+.uvicorn.log
+
+# Editors
+.claude/
+.idea/
+.vscode/*
+!.vscode/
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
