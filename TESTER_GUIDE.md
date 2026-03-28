@@ -10,7 +10,7 @@ cp .env.example .env
 python run.py --provision
 ```
 
-The app runs at `http://localhost:9281`.
+The app runs at `http://localhost:6800`.
 
 ## Seed the Canonical Baseline
 

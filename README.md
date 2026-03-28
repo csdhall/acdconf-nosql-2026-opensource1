@@ -19,13 +19,13 @@ cp .env.example .env
 python run.py --provision --open-browser
 ```
 
-If port `9281` is already in use:
+If port `6800` is already in use:
 
 ```bash
 python run.py --provision --open-browser --kill-existing-port
 ```
 
-The app runs at `http://127.0.0.1:9281/`.
+The app runs at `http://127.0.0.1:6800/`.
 
 ## VS Code
 

@@ -18,6 +18,7 @@ const STRATEGIES = {
 };
 
 const BASELINE_TURN_COUNT = 60;
+const ALLOWED_TURN_DRIFT = 3;
 const BASELINE_LOAD_COMMAND = 'python scripts/load_test_data.py --force';
 const SAMPLE_QUESTIONS = [
     "What's the tech stack?",
@@ -90,6 +91,61 @@ function setBaselineNote(message, level = 'warning') {
     baselineNote.classList.add(level);
 }
 
+function normalizeTurnCount(value) {
+    const turnCount = Number(value);
+    if (!Number.isFinite(turnCount) || turnCount < 0) return 0;
+    return Math.floor(turnCount);
+}
+
+function formatDriftDelta(delta) {
+    return delta > 0 ? `+${delta}` : String(delta);
+}
+
+function getSeededSessionState(sessionId, turnCount) {
+    const normalizedTurnCount = normalizeTurnCount(turnCount);
+    const driftDelta = normalizedTurnCount - BASELINE_TURN_COUNT;
+
+    if (normalizedTurnCount < BASELINE_TURN_COUNT) {
+        return {
+            label: `${normalizedTurnCount}/${BASELINE_TURN_COUNT} incomplete`,
+            level: 'warning',
+            message: `${sessionId} is incomplete at ${normalizedTurnCount}/${BASELINE_TURN_COUNT} user turns. The seeded demo profile is expected to stay at exactly ${BASELINE_TURN_COUNT}, so recall results may be wrong until you reset to ${BASELINE_TURN_COUNT}.`,
+        };
+    }
+
+    if (driftDelta === 0) {
+        return {
+            label: 'clean baseline',
+            level: '',
+            message: '',
+        };
+    }
+
+    if (driftDelta > ALLOWED_TURN_DRIFT) {
+        return {
+            label: `${formatDriftDelta(driftDelta)} hard drift`,
+            level: 'danger',
+            message: `Seeded dataset drifted: ${sessionId} is at ${normalizedTurnCount}/${BASELINE_TURN_COUNT} user turns (${formatDriftDelta(driftDelta)}). Chat is still enabled, but recall results may be wrong until you reset to ${BASELINE_TURN_COUNT}.`,
+        };
+    }
+
+    return {
+        label: `${formatDriftDelta(driftDelta)} soft drift`,
+        level: 'warning',
+        message: `${sessionId} is at ${normalizedTurnCount}/${BASELINE_TURN_COUNT} user turns (${formatDriftDelta(driftDelta)}). Chat is still enabled, but results may start to skew because the seeded comparison point has drifted. Reset to ${BASELINE_TURN_COUNT} for clean comparisons.`,
+    };
+}
+
+function formatSessionOptionLabel(session, baselineSessionId) {
+    const turnCount = normalizeTurnCount(session.turn_count);
+    if (session.session_id !== baselineSessionId) {
+        return `${session.session_id} (${turnCount} turns)`;
+    }
+
+    const seededState = getSeededSessionState(session.session_id, turnCount);
+    return `${session.session_id} (${turnCount} turns - ${seededState.label})`;
+}
+
 function resetLocalPanels() {
     tokenHistory = [];
     updateTokenChart();
@@ -157,19 +213,9 @@ function updateBaselineWarning(sessions) {
         return;
     }
 
-    const turnCount = Number(baseline.turn_count || 0);
-    if (turnCount < BASELINE_TURN_COUNT) {
-        setBaselineNote(
-            `The canonical ${cfg.baselineSession} session is incomplete at ${turnCount}/${BASELINE_TURN_COUNT} turns. Reload the baseline before comparing strategies.`,
-        );
-        return;
-    }
-
-    if (turnCount > BASELINE_TURN_COUNT) {
-        setBaselineNote(
-            `The canonical ${cfg.baselineSession} session has drifted to ${turnCount} turns. You can keep chatting, but the clean comparison point is 60 turns. Reset to 60 for best results, especially with Sliding Window.`,
-            'info',
-        );
+    const seededState = getSeededSessionState(cfg.baselineSession, baseline.turn_count);
+    if (seededState.message) {
+        setBaselineNote(seededState.message, seededState.level || 'warning');
         return;
     }
 
@@ -198,16 +244,15 @@ async function loadSessions(preferredSessionId = '') {
         if (requestId !== loadSessionsRequestId) return;
 
         const sessions = Array.isArray(sessionsRaw) ? sessionsRaw : [];
+        const cfg = currentStrategyConfig();
         sessionSelect.innerHTML = '<option value="">-- Select Session --</option>';
 
         sessions.forEach((session) => {
             const option = document.createElement('option');
             option.value = session.session_id;
-            option.textContent = `${session.session_id} (${session.turn_count} turns)`;
+            option.textContent = formatSessionOptionLabel(session, cfg.baselineSession);
             sessionSelect.appendChild(option);
         });
-
-        const cfg = currentStrategyConfig();
         const hasPreferred = previousSelection && sessions.some((session) => session.session_id === previousSelection);
         const hasBaseline = sessions.some((session) => session.session_id === cfg.baselineSession);
 
@@ -597,47 +642,4 @@ chatInput.addEventListener('keydown', (event) => {
 
 populateQuestionSelect();
 clearChat();
-loadSessions();
-
-copyMemoryBtn.addEventListener('click', async () => {
-    const text = memoryContent.textContent;
-    if (!text) return;
-
-    try {
-        await navigator.clipboard.writeText(text);
-        copyMemoryBtn.textContent = 'Copied!';
-        copyMemoryBtn.classList.add('copied');
-        setTimeout(() => {
-            copyMemoryBtn.textContent = 'Copy';
-            copyMemoryBtn.classList.remove('copied');
-        }, 2000);
-    } catch (_error) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        copyMemoryBtn.textContent = 'Copied!';
-        copyMemoryBtn.classList.add('copied');
-        setTimeout(() => {
-            copyMemoryBtn.textContent = 'Copy';
-            copyMemoryBtn.classList.remove('copied');
-        }, 2000);
-    }
-});
-
-closeMemoryBtn.addEventListener('click', () => {
-    memoryPanel.style.display = 'none';
-});
-
-sendBtn.addEventListener('click', sendMessage);
-chatInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-    }
-});
-
-renderWelcomeMessage();
 loadSessions();

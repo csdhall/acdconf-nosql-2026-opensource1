@@ -236,6 +236,12 @@ header h1 {
     color: var(--muted);
 }
 
+.inline-note.danger {
+    border-color: #9b3340;
+    background: rgba(67, 20, 27, 0.96);
+    color: #ffc0c7;
+}
+
 .main-content {
     flex: 1;
     min-height: 0;

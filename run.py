@@ -72,7 +72,7 @@ def main() -> None:
         description="Run the app server (Azure Cosmos DB for NoSQL + optional provisioning)."
     )
     parser.add_argument("--host", default="0.0.0.0")
-    parser.add_argument("--port", default=9281, type=int)
+    parser.add_argument("--port", default=6800, type=int)
     parser.add_argument("--reload", dest="reload", action="store_true", default=True)
     parser.add_argument("--no-reload", dest="reload", action="store_false")
     parser.add_argument("--open-browser", action="store_true", help="Open the UI in your browser.")

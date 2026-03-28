@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple
 import httpx
 
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:9281")
+BASE_URL = os.getenv("BASE_URL", "http://localhost:6800")
 
 
 SETUP_MESSAGES = [
