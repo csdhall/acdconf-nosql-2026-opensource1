@@ -2,6 +2,8 @@
 
 This repo is a small FastAPI app for comparing four multi-turn memory strategies backed by Azure Cosmos DB for NoSQL:
 
+> Demo note: this repository is intentionally optimized for clarity and repeatability in a conference-style demo. It is NOT A production reference implementation or a statement of how these patterns should be built in enterprise code. The app still uses Azure Cosmos DB for NoSQL for persistence, and the `entity_graph` strategy can use native Cosmos vector or full-text retrieval when those features are enabled, but the overall implementation is deliberately simplified.
+
 - `direct_llm`: no-memory baseline
 - `sliding_window`: recent turns plus a rolling summary
 - `hierarchical`: tiered summaries plus long-term facts
